@@ -66,4 +66,32 @@ class Reflector:
     def reflect(self, letter):
         return self.wiring[ord(letter) - ord('A')]
     
+
+class EnigmaMachine:
+    def __init__(self, rotors, rotor_positions, plugboard_connections, reflector_type='B'):
+        self.rotors = [Rotor(rotors[i], rotor_positions[i]) for i in range(3)]
+        self.plugboard = Plugboard(plugboard_connections)
+        self.reflector = Reflector(reflector_type)
+
+    def encode_letter(self, letter):
+        letter = self.plugboard.encode(letter)
+        for rotor in self.rotors:
+            letter = rotor.encode_forward(letter)
+        letter = self.reflector.reflect(letter)
+        for rotor in reversed(self.rotors):
+            letter = rotor.encode_backward(letter)
+        letter = self.plugboard.encode(letter)
+        self._rotate_rotors()
+        return letter
+
+    def _rotate_rotors(self):
+        rotate_next = True
+        for rotor in self.rotors:
+            if rotate_next:
+                rotate_next = rotor.rotate()
+            else:
+                break
+
+    def encode_message(self, message):
+        return ''.join([self.encode_letter(char) for char in message if char.isalpha()])
     
