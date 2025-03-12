@@ -95,3 +95,66 @@ class EnigmaMachine:
     def encode_message(self, message):
         return ''.join([self.encode_letter(char) for char in message if char.isalpha()])
     
+
+def main():
+    enigma = None
+
+    while True:
+        print("\nCurrent Settings:", "Configured" if enigma else "Not Configured")
+        print("Menu:")
+        print("1. Configure new Enigma settings")
+        print("2. Encrypt a message")
+        print("3. Decrypt a message")
+        print("0. Exit")
+        choice = input("Enter your choice: ")
+
+        if choice == '1':
+            print("\nConfigure your Enigma machine settings.")
+            rotors = []
+            rotor_positions = []
+            for i in range(3):
+                rotor_num = int(input(f"Enter rotor {i + 1} number (1-5): "))
+                rotor_pos = int(input(f"Enter starting position for rotor {i + 1} (0-25): "))
+                rotors.append(rotor_num)
+                rotor_positions.append(rotor_pos)
+
+            plugboard_pairs = []
+            while True:
+                pair = input("Enter plugboard pair (2 letters) or 'done' to finish: ").upper()
+                if pair == 'DONE':
+                    break
+                if len(pair) == 2 and pair.isalpha():
+                    plugboard_pairs.append(pair)
+                else:
+                    print("Invalid pair. Please enter exactly 2 letters.")
+
+            enigma = EnigmaMachine(rotors, rotor_positions, plugboard_pairs)
+            print("Enigma machine configured successfully.")
+
+        elif choice == '2':
+            if enigma:
+                message = input("Enter your message: ").upper()
+                encrypted_message = enigma.encode_message(message)
+                print("Encrypted message:", encrypted_message)
+            else:
+                print("No settings configured. Please configure settings first.")
+
+        elif choice == '3':
+            if enigma:
+                message = input("Enter your message: ").upper()
+                decrypted_message = enigma.encode_message(message)  # Enigma is self-reciprocal
+                print("Decrypted message:", decrypted_message)
+            else:
+                print("No settings configured. Please configure settings first.")
+
+        elif choice == '0':
+            print("Exiting. Goodbye!")
+            break
+
+        else:
+            print("Invalid choice. Please try again.")
+
+
+
+if __name__ == "__main__":
+    main()
