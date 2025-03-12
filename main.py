@@ -68,10 +68,11 @@ class Reflector:
     
 
 class EnigmaMachine:
-    def __init__(self, rotors, rotor_positions, plugboard_connections, reflector_type='B'):
+    def __init__(self, rotors, rotor_positions, plugboard_connections, reflector_wiring):
         self.rotors = [Rotor(rotors[i], rotor_positions[i]) for i in range(3)]
+        self.initial_positions = rotor_positions  # Save initial positions
         self.plugboard = Plugboard(plugboard_connections)
-        self.reflector = Reflector(reflector_type)
+        self.reflector = Reflector(reflector_wiring)
 
     def encode_letter(self, letter):
         letter = self.plugboard.encode(letter)
@@ -85,19 +86,32 @@ class EnigmaMachine:
         return letter
 
     def _rotate_rotors(self):
-        rotate_next = True
-        for rotor in self.rotors:
-            if rotate_next:
-                rotate_next = rotor.rotate()
-            else:
-                break
+        if self.rotors[0].rotate():
+            if self.rotors[1].rotate():
+                self.rotors[2].rotate()
 
     def encode_message(self, message):
         return ''.join([self.encode_letter(char) for char in message if char.isalpha()])
+
+    def reset(self):
+        """Reset the rotors to their initial positions."""
+        for i in range(3):
+            self.rotors[i].position = self.initial_positions[i]
     
 
 def main():
-    enigma = None
+    # Predefined settings for simplicity
+    rotors = [
+        "EKMFLGDQVZNTOWYHXUSPAIBRCJ",  # Rotor I
+        "AJDKSIRUXBLHWTMCQGZNPYFVOE",  # Rotor II
+        "BDFHJLCPRTXVZNYEIWGAKMUSQO"   # Rotor III
+    ]
+    rotor_positions = [0, 0, 0]  # Starting positions
+    plugboard_connections = ["AB", "CD", "EF"]  # Plugboard pairs
+    reflector_wiring = "YRUHQSLDPXNGOKMIEBFZCWVJAT"  # Reflector B
+
+    # Create the Enigma machine
+    enigma = EnigmaMachine(rotors, rotor_positions, plugboard_connections, reflector_wiring)
 
     while True:
         print("\nCurrent Settings:", "Configured" if enigma else "Not Configured")
@@ -128,7 +142,7 @@ def main():
                 else:
                     print("Invalid pair. Please enter exactly 2 letters.")
 
-            enigma = EnigmaMachine(rotors, rotor_positions, plugboard_pairs)
+            enigma = EnigmaMachine(rotors, rotor_positions, plugboard_pairs, reflector_wiring)
             print("Enigma machine configured successfully.")
 
         elif choice == '2':
@@ -141,6 +155,7 @@ def main():
 
         elif choice == '3':
             if enigma:
+                enigma.reset()  # Reset the rotors before decrypting
                 message = input("Enter your message: ").upper()
                 decrypted_message = enigma.encode_message(message)  # Enigma is self-reciprocal
                 print("Decrypted message:", decrypted_message)
