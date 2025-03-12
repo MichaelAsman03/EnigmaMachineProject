@@ -1,3 +1,5 @@
+import unittest
+
 class Rotor:
     ROTOR_WIRINGS = {
         1: "EKMFLGDQVZNTOWYHXUSPAIBRCJ",
@@ -19,22 +21,23 @@ class Rotor:
         self.rotor_number = rotor_number
         self.wiring = self.ROTOR_WIRINGS[rotor_number]
         self.notch = self.NOTCHES[rotor_number]
-        self.position = chr(start_position + ord('A'))
+        self.position = start_position  # Position is now an integer (0-25)
 
     def encode_forward(self, letter):
-        index = (ord(letter) - ord('A') + ord(self.position) - ord('A')) % 26
+        index = (ord(letter) - ord('A') + self.position) % 26
         encoded_letter = self.wiring[index]
-        return chr((ord(encoded_letter) - ord(self.position) + ord('A')) % 26 + ord('A'))
+        return chr((ord(encoded_letter) - ord('A') - self.position) % 26 + ord('A'))
 
     def encode_backward(self, letter):
-        index = (ord(letter) - ord('A') + ord(self.position) - ord('A')) % 26
+        index = (ord(letter) - ord('A') + self.position) % 26
         encoded_letter = chr(self.wiring.index(chr(index + ord('A'))) + ord('A'))
-        return chr((ord(encoded_letter) - ord(self.position) + ord('A')) % 26 + ord('A'))
+        return chr((ord(encoded_letter) - ord('A') - self.position) % 26 + ord('A'))
 
     def rotate(self):
-        self.position = chr((ord(self.position) - ord('A') + 1) % 26 + ord('A'))
-        return self.position == self.notch
-    
+        self.position = (self.position + 1) % 26
+        return self.position == ord(self.notch) - ord('A')
+
+
 
 class Plugboard:
     def __init__(self, connections):
@@ -65,14 +68,15 @@ class Reflector:
 
     def reflect(self, letter):
         return self.wiring[ord(letter) - ord('A')]
-    
+
+
 
 class EnigmaMachine:
-    def __init__(self, rotors, rotor_positions, plugboard_connections, reflector_wiring):
+    def __init__(self, rotors, rotor_positions, plugboard_connections, reflector_type):
         self.rotors = [Rotor(rotors[i], rotor_positions[i]) for i in range(3)]
         self.initial_positions = rotor_positions  # Save initial positions
         self.plugboard = Plugboard(plugboard_connections)
-        self.reflector = Reflector(reflector_wiring)
+        self.reflector = Reflector(reflector_type)
 
     def encode_letter(self, letter):
         letter = self.plugboard.encode(letter)
@@ -97,21 +101,69 @@ class EnigmaMachine:
         """Reset the rotors to their initial positions."""
         for i in range(3):
             self.rotors[i].position = self.initial_positions[i]
-    
+
+
+
+class TestRotor(unittest.TestCase):
+    def test_encode_forward(self):
+        rotor = Rotor(1, 0)  # Rotor I, starting position 0
+        self.assertEqual(rotor.encode_forward('A'), 'E')
+        self.assertEqual(rotor.encode_forward('B'), 'K')
+
+    def test_encode_backward(self):
+        rotor = Rotor(1, 0)  # Rotor I, starting position 0
+        self.assertEqual(rotor.encode_backward('E'), 'A')
+        self.assertEqual(rotor.encode_backward('K'), 'B')
+
+    def test_rotate(self):
+        rotor = Rotor(1, 0)  # Rotor I, starting position 0
+        self.assertFalse(rotor.rotate())  # Rotor should not notch at position 0
+        self.assertEqual(rotor.position, 1)
+
+
+class TestPlugboard(unittest.TestCase):
+    def test_encode(self):
+        plugboard = Plugboard(["AB", "CD"])
+        self.assertEqual(plugboard.encode('A'), 'B')
+        self.assertEqual(plugboard.encode('B'), 'A')
+        self.assertEqual(plugboard.encode('C'), 'D')
+        self.assertEqual(plugboard.encode('D'), 'C')
+        self.assertEqual(plugboard.encode('E'), 'E')  # Unswapped letter
+
+
+class TestReflector(unittest.TestCase):
+    def test_reflect(self):
+        reflector = Reflector('B')
+        self.assertEqual(reflector.reflect('A'), 'Y')
+        self.assertEqual(reflector.reflect('B'), 'R')
+
+
+class TestEnigmaMachine(unittest.TestCase):
+    def test_encode_message(self):
+        rotors = [1, 2, 3]  # Rotor I, II, III
+        rotor_positions = [0, 0, 0]  # Starting positions
+        plugboard_connections = ["AB", "CD"]  # Plugboard pairs
+        reflector_type = 'B'  # Reflector B
+
+        enigma = EnigmaMachine(rotors, rotor_positions, plugboard_connections, reflector_type)
+        encrypted_message = enigma.encode_message("HELLO")
+        self.assertEqual(encrypted_message, "RFKTG")
+
+        enigma.reset()
+        decrypted_message = enigma.encode_message("RFKTG")
+        self.assertEqual(decrypted_message, "HELLO")
+
+
 
 def main():
     # Predefined settings for simplicity
-    rotors = [
-        "EKMFLGDQVZNTOWYHXUSPAIBRCJ",  # Rotor I
-        "AJDKSIRUXBLHWTMCQGZNPYFVOE",  # Rotor II
-        "BDFHJLCPRTXVZNYEIWGAKMUSQO"   # Rotor III
-    ]
-    rotor_positions = [0, 0, 0]  # Starting positions
+    rotors = [1, 2, 3]  # Rotor numbers (1-5)
+    rotor_positions = [0, 0, 0]  # Starting positions (0-25)
     plugboard_connections = ["AB", "CD", "EF"]  # Plugboard pairs
-    reflector_wiring = "YRUHQSLDPXNGOKMIEBFZCWVJAT"  # Reflector B
+    reflector_type = 'B'  # Reflector type ('A', 'B', or 'C')
 
     # Create the Enigma machine
-    enigma = EnigmaMachine(rotors, rotor_positions, plugboard_connections, reflector_wiring)
+    enigma = EnigmaMachine(rotors, rotor_positions, plugboard_connections, reflector_type)
 
     while True:
         print("\nCurrent Settings:", "Configured" if enigma else "Not Configured")
@@ -142,7 +194,7 @@ def main():
                 else:
                     print("Invalid pair. Please enter exactly 2 letters.")
 
-            enigma = EnigmaMachine(rotors, rotor_positions, plugboard_pairs, reflector_wiring)
+            enigma = EnigmaMachine(rotors, rotor_positions, plugboard_pairs, reflector_type)
             print("Enigma machine configured successfully.")
 
         elif choice == '2':
@@ -172,4 +224,8 @@ def main():
 
 
 if __name__ == "__main__":
+    # Run the main program
     main()
+
+    # Run the unit tests
+    unittest.main()
