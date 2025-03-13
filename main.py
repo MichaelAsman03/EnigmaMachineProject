@@ -214,8 +214,7 @@ def main():
 
 
 if __name__ == "__main__":
-    # Run the main program
     main()
 
-    # Run the unit tests
+    
     unittest.main()
