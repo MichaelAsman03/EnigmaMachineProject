@@ -142,8 +142,6 @@ class TestEnigmaMachine(unittest.TestCase):
         reflector_type = 'B'  # Reflector B
 
         enigma = EnigmaMachine(rotors, rotor_positions, plugboard_connections, reflector_type)
-        
-
         enigma.reset()
         
 
